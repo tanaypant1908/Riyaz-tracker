@@ -27,5 +27,5 @@ This is a complete, serverless frontend application that runs entirely in the we
 3. Simply double-click `index.html` to launch the application instantly in any modern web browser.
 
 ## 👤 Author
-Tanay Pant 
-Computer Science Enthusiast and Vocalist
+Tanay Pant, 
+ Computer Science Enthusiast and Vocalist
