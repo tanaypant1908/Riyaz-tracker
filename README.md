@@ -28,5 +28,4 @@ This is a complete, serverless frontend application that runs entirely in the we
 
 ## 👤 Author
 Tanay Pant 
-[Your Name]  
-*Submitted as a School/College Computer Science Project.*
+Computer Science Enthusiast and Vocalist
