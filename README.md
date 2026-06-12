@@ -24,7 +24,7 @@ This is a complete, serverless frontend application that runs entirely in the we
 
 1. Clone or download this repository to your local machine.
 2. Ensure `index.html`, `style.css`, and `script.js` are saved in the same directory.
-3. Simply double-click `index.html` to launch the application instantly in any modern web browser.
+3. Simply double-click `index.html` to launch the application instantly in any web browser.
 
 ## 👤 Author
 Tanay Pant, 
