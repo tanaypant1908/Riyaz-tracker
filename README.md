@@ -1,8 +1,7 @@
 # 🪕 Riyaz Tracker — Definitive Codebase & Raga Architecture Documentation
 
-A high-performance, local-first hybrid mobile application engineered for students and practitioners of Hindustani Classical Music. This repository houses the entire frontend architecture, real-time programmatic audio synthesis tools, interactive reference layers, and client-side state management systems.
+A high-performance application engineered for students and practitioners of Hindustani Classical Music. This repository houses the entire frontend architecture, real-time programmatic audio synthesis tools, interactive reference layers, and client-side state management systems.
 
-The production deployment of this repository has passed all certification stages and is officially live on the Google App Store.
 
 ---
 
