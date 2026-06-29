@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riyaz Tracker – Master Classical Indian Music</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 🎹 SWAR KEYBOARD UI GRAPHICS */
+        .swar-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        @media(min-width: 450px) {
+            .swar-keyboard { grid-template-columns: repeat(4, 1fr); }
+        }
+        
+        .swar-btn {
+            background-color: #ffffff;
+            border: 2px solid #ddd;
+            padding: 18px 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        
+        .swar-label { font-size: 1.2rem; color: #2c3e50; }
+        .swar-type { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 6px; border-radius: 4px; }
+        
+        .shuddha { border-color: #8e44ad; }
+        .shuddha .swar-type { background-color: #f3e5f5; color: #8e44ad; }
+        .komal { border-color: #2980b9; }
+        .komal .swar-type { background-color: #e1f5fe; color: #2980b9; }
+        .teevra { border-color: #d35400; }
+        .teevra .swar-type { background-color: #fff3e0; color: #d35400; }
+        
+        .swar-btn:active, .swar-btn.playing {
+            transform: scale(0.95);
+            box-shadow: none;
+        }
+        .swar-btn.playing.shuddha { background-color: #8e44ad; color: #fff; }
+        .swar-btn.playing.komal { background-color: #2980b9; color: #fff; }
+        .swar-btn.playing.teevra { background-color: #d35400; color: #fff; }
+        .swar-btn.playing .swar-label, .swar-btn.playing .swar-type { color: inherit; background: transparent; }
+
+        /* 🔄 SELECTOR MENU & AUDIO CORE */
+        .raga-selector-container { margin-top: 25px; text-align: left; }
+        .raga-label { font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px; font-size: 0.95rem; }
+        .raga-select-dropdown { width: 100%; padding: 14px; font-size: 1rem; font-weight: bold; border-radius: 8px; border: 2px solid #ccd1d1; background-color: #fafafa; color: #2c3e50; cursor: pointer; }
+        .playback-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+        .btn-audio { flex: 1; min-width: 100px; padding: 15px; font-size: 1.05rem; font-weight: bold; border: none; border-radius: 8px; color: white; cursor: pointer; transition: background 0.2s; }
+        .btn-aaroh { background-color: #2ecc71; }
+        .btn-avroh { background-color: #e67e22; }
+        .btn-taan { background-color: #9b59b6; }
+        .btn-aaroh:hover { background-color: #27ae60; }
+        .btn-avroh:hover { background-color: #d35400; }
+        .btn-taan:hover { background-color: #8e44ad; }
+
+        /* 📚 RAGA LIBRARY DISPLAY CARDS */
+        .raga-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+        .raga-card { background: #ffffff; padding: 20px; border-radius: 10px; border-left: 5px solid #8e44ad; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; cursor: pointer; transition: transform 0.2s; }
+        .raga-card:hover { transform: translateY(-3px); }
+        .raga-card h3 { margin: 0 0 8px 0; color: #2c3e50; font-size: 1.3rem; }
+        .raga-card p { margin: 4px 0; font-size: 0.9rem; color: #666; }
+        .tap-hint { font-size: 0.75rem; color: #8e44ad; font-weight: bold; display: block; margin-top: 10px; text-transform: uppercase; }
+
+        /* 🖼️ INTERACTIVE OVERLAY MODAL SYSTEM */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #ffffff; width: 90%; max-width: 550px; max-height: 85vh; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow-y: auto; text-align: left; position: relative; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(30px); } to { transform: translateY(0); } }
+        .close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 1.8rem; font-weight: bold; color: #7f8c8d; cursor: pointer; border: none; background: none; }
+        
+        .modal-section-title { font-size: 1.05rem; font-weight: bold; color: #2c3e50; margin: 18px 0 8px 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-text { font-size: 0.95rem; color: #555; line-height: 1.5; margin: 5px 0; }
+        
+        .checklist-group { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; }
+        .checklist-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; cursor: pointer; font-size: 1rem; color: #2c3e50; font-weight: 500; }
+        .checklist-item:last-child { margin-bottom: 0; }
+        .checklist-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #8e44ad; }
+        .btn-log-save { width: 100%; background: #8e44ad; color: #fff; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; margin-top: 15px; cursor: pointer; transition: background 0.2s; }
+        .btn-log-save:hover { background: #732d91; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">
+                <span class="logo-icon">🪕</span>
+                <h1>Riyaz Tracker</h1>
+            </div>
+            <div class="nav-links">
+                <a href="javascript:void(0)" onclick="openPage('home')">Home</a>
+                <a href="javascript:void(0)" onclick="openPage('swar-trainer')">Swar Sounds</a>
+                <a href="javascript:void(0)" onclick="openPage('dashboard')">Dashboard</a>
+                <a href="javascript:void(0)" onclick="openPage('library')">Raga Library</a>
+                <a href="javascript:void(0)" onclick="openPage('logs')">Practice Logs</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- 🏠 HOME SCREEN -->
+        <section id="home" class="hero-section app-page">
+            <div class="hero-content">
+                <h2>Master the Art of Indian Classical Music</h2>
+                <p>Welcome to your digital sanctuary for classical training. Track your journey through the complex melodies of ragas and maintain the discipline of daily practice.</p>
+            </div>
+            <div class="info-grid">
+                <div class="info-card"><h3>What is Indian Classical Music?</h3><p>One of the oldest unbroken musical traditions in the world, focused heavily on melody (Raga) and rhythm (Tala).</p></div>
+                <div class="info-card"><h3>What is a Raga?</h3><p>A beautiful melodic framework for composition. Each raga features its own rules, scales, and emotional character.</p></div>
+                <div class="info-card"><h3>The Importance of Riyaz</h3><p>Riyaz is the consistent daily practice routine required to build vocal power, accuracy, and depth.</p></div>
+            </div>
+        </section>
+
+        <!-- 🎵 SWAR SOUNDS SCREEN -->
+        <section id="swar-trainer" class="hero-section app-page" style="display: none;">
+            <div class="hero-content">
+                <h2>Swar Sounds</h2>
+                <p>Tap any individual Swar below to hear its vocal tuning reference, or pick a specific raga scale to run automated sequences.</p>
+            </div>
+
+            <div class="swar-keyboard">
+                <div class="swar-btn shuddha" id="note-Sa" onclick="playNote('Sa')"><span class="swar-label">Sa</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn komal" id="note-ReK" onclick="playNote('ReK')"><span class="swar-label"><u>Re</u></span><span class="swar-type">Komal</span></div>
+                <div class="swar-btn shuddha" id="note-Re" onclick="playNote('Re')"><span class="swar-label">Re</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn komal" id="note-GaK" onclick="playNote('GaK')"><span class="swar-label"><u>Ga</u></span><span class="swar-type">Komal</span></div>
+                <div class="swar-btn shuddha" id="note-Ga" onclick="playNote('Ga')"><span class="swar-label">Ga</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn shuddha" id="note-Ma" onclick="playNote('Ma')"><span class="swar-label">Ma</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn teevra" id="note-MaT" onclick="playNote('MaT')"><span class="swar-label">Mā</span><span class="swar-type">Teevra</span></div>
+                <div class="swar-btn shuddha" id="note-Pa" onclick="playNote('Pa')"><span class="swar-label">Pa</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn komal" id="note-DhaK" onclick="playNote('DhaK')"><span class="swar-label"><u>Dha</u></span><span class="swar-type">Komal</span></div>
+                <div class="swar-btn shuddha" id="note-Dha" onclick="playNote('Dha')"><span class="swar-label">Dha</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn komal" id="note-NiK" onclick="playNote('NiK')"><span class="swar-label"><u>Ni</u></span><span class="swar-type">Komal</span></div>
+                <div class="swar-btn shuddha" id="note-Ni" onclick="playNote('Ni')"><span class="swar-label">Ni</span><span class="swar-type">Shuddha</span></div>
+                <div class="swar-btn shuddha" id="note-Sa2" onclick="playNote('Sa2')"><span class="swar-label">Sa'</span><span class="swar-type">Tar Sa</span></div>
+            </div>
+
+            <div class="raga-selector-container">
+                <label for="raga-select" class="raga-label">Target Raga Scale:</label>
+                <select id="raga-select" class="raga-select-dropdown">
+                    <option value="bilaval">Raga Bilaval (All Shuddha Notes)</option>
+                    <option value="bhairav">Raga Bhairav (Komal Re, Komal Dha)</option>
+                    <option value="bhupali">Raga Bhupali (Sa Re Ga Pa Dha)</option>
+                    <option value="yaman">Raga Yaman (Teevra Ma)</option>
+                    <option value="kafi">Raga Kafi (Komal Ga, Komal Ni)</option>
+                    <option value="bhairavi">Raga Bhairavi (All 4 Komal Notes)</option>
+                    <option value="asavari">Raga Asavari (Komal Ga, Dha, Ni)</option>
+                    <option value="khamaj">Raga Khamaj (Komal Ni in Avroh)</option>
+                    <option value="durga">Raga Durga (Pentatonic Shuddha)</option>
+                    <option value="malkauns">Raga Malkauns (Skips Re and Pa)</option>
+                    <option value="desh">Raga Desh (Audav-Sampoorna)</option>
+                    <option value="bageshri">Raga Bageshri (Komal Ga, Komal Ni)</option>
+                    <option value="todi">Raga Todi (Komal Re, Ga, Dha + Teevra Ma)</option>
+                    <option value="marwa">Raga Marwa (Komal Re, Teevra Ma)</option>
+                    <option value="sarang">Raga Vrindavani Sarang (Both Nis)</option>
+                    <option value="jaunpuri">Raga Jaunpuri (Asavari Thaat Mode)</option>
+                    <option value="ahirbhairav">Raga Ahir Bhairav (Komal Re, Komal Ni)</option>
+                    <option value="bihag">Raga Bihag (Both Ma Swars)</option>
+                    <option value="bairagi">Raga Bairagi (Audav Bhairav Scale)</option>
+                    <option value="purvi">Raga Purvi (Komal Re, Dha + Teevra Ma)</option>
+                </select>
+            </div>
+
+            <div class="playback-controls">
+                <button class="btn-audio btn-aaroh" onclick="playSequence('aaroh')">🔼 Play Aaroh</button>
+                <button class="btn-audio btn-avroh" onclick="playSequence('avroh')">🔽 Play Avroh</button>
+                <button class="btn-audio btn-taan" onclick="playSequence('taan')">⚡ Play Taan</button>
+            </div>
+        </section>
+
+        <!-- 📊 DASHBOARD SCREEN -->
+        <section id="dashboard" class="dashboard-section app-page" style="display: none;">
+            <h2 class="section-title">Your Progress</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><span class="stat-value" id="total-minutes">0</span><span class="stat-label">Total Minutes</span></div>
+                <div class="stat-card"><span class="stat-value" id="total-hours">0</span><span class="stat-label">Total Hours</span></div>
+                <div class="stat-card"><span class="stat-value" id="practice-streak">0</span><span class="stat-label">Day Streak</span></div>
+            </div>
+        </section>
+
+        <!-- 📚 RAGA LIBRARY SCREEN -->
+        <section id="library" class="library-section app-page" style="display: none;">
+            <div class="library-header"><h2 class="section-title">Raga Library</h2></div>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Tap any Raga card to check historical profiles, notation breakdowns, and interactive workout sheets.</p>
+            <div id="raga-grid" class="raga-grid"></div>
+        </section>
+
+        <!-- 📝 PRACTICE LOGS SCREEN -->
+        <section id="logs" class="logs-section app-page" style="display: none;">
+            <div class="log-container">
+                <div class="log-form">
+                    <h3>Log Your Riyaz</h3>
+                    <form id="riyaz-form">
+                        <div class="form-group"><label>Date</label><input type="date" id="log-date" required></div>
+                        <button type="submit" class="btn-primary">Save Session</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 🖼️ MODAL OVERLAY COMPONENT BOX FOR DRILLDOWN INTERACTION -->
+    <div class="modal-overlay" id="raga-modal">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeRagaModal()">&times;</button>
+            <h2 id="modal-raga-name" style="color: #8e44ad; margin-top: 5px;">Raga Title</h2>
+            <p id="modal-raga-meta" style="font-style: italic; color: #7f8c8d; margin-bottom: 10px;">Thaat • Time Frame</p>
+            
+            <div class="modal-section-title">Swar Notation Breakdown</div>
+            <p class="modal-text"><strong>Aaroh:</strong> <span id="modal-raga-aaroh" style="color:#2ecc71; font-weight:bold;"></span></p>
+            <p class="modal-text"><strong>Avroh:</strong> <span id="modal-raga-avroh" style="color:#e67e22; font-weight:bold;"></span></p>
+            <p class="modal-text"><strong>Sample Taan:</strong> <span id="modal-raga-taan" style="color:#9b59b6; font-weight:bold;"></span></p>
+
+            <div class="modal-section-title">Historical Significance</div>
+            <p class="modal-text" id="modal-raga-history">Historical background notes go here...</p>
+            
+            <div class="modal-section-title">Bollywood Song Adaptations</div>
+            <p class="modal-text" id="modal-raga-songs" style="color: #2980b9; font-weight: 500;">Song list mapping...</p>
+            
+            <div class="modal-section-title">Interactive Progress Workbook</div>
+            <p class="modal-text" style="font-size: 0.85rem; color: #7f8c8d;">Check your milestones for today's riyaz session:</p>
+            
+            <div class="checklist-group">
+                <label class="checklist-item"><input type="checkbox" id="chk-aaroh"> Completed Aaroh Scale runs</label>
+                <label class="checklist-item"><input type="checkbox" id="chk-avroh"> Completed Avroh Scale descents</label>
+                <label class="checklist-item"><input type="checkbox" id="chk-alankars"> Practiced Pattern Alankars</label>
+                <label class="checklist-item"><input type="checkbox" id="chk-taans"> Executed High-Speed Taans</label>
+            </div>
+            
+            <button class="btn-log-save" onclick="saveModalProgress()">Update Training Progress Log</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- UI Page Switching Script Block -->
+    <script>
+        function openPage(pageId) {
+            var pages = document.getElementsByClassName('app-page');
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].style.display = 'none';
+            }
+            document.getElementById(pageId).style.display = 'block';
+        }
+    </script>
+
+    <!-- 🎹 AUDIO LOGIC, 20-RAGA PROFILES ENGINE & MODAL TRACKER -->
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let activeRagaKeyForTracking = '';
+
+        const swarFrequencies = {
+            'Sa': 261.63, 'ReK': 277.18, 'Re': 293.66, 'GaK': 311.13, 'Ga': 329.63,
+            'Ma': 349.23, 'MaT': 369.99, 'Pa': 392.00, 'DhaK': 415.30, 'Dha': 440.00,
+            'NiK': 466.16, 'Ni': 493.88, 'Sa2': 523.25
+        };
+
+        // 🎼 High-Fidelity 20-Raga Info Base + Audio Notation Arrays (Aaroh, Avroh, Taan)
+        const ragaDatabase = {
+            'bilaval': {
+                name: 'Raga Bilaval', thaat: 'Bilaval', time: 'Morning (9 AM - 12 PM)', notes: 'All Shuddha Swars',
+                history: 'The foundational standard scale of modern Hindustani music, matching the Western Major Scale. It represents deep clarity, pristine purity, and structural harmony.',
+                songs: '• Teri Bindiya Re (Abhimaan)\n• Tu Mile Dil Khile (Criminal)',
+                aaroh: ['Sa', 'Re', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'Dha', 'Pa', 'Ma', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ga', 'Ma', 'Pa', 'Ma', 'Ga', 'Re', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni', 'Sa2']
+            },
+            'bhairav': {
+                name: 'Raga Bhairav', thaat: 'Bhairav', time: 'Dawn (4 AM - 6 AM)', notes: 'Komal Re, Komal Dha',
+                history: 'Named after Lord Shiva’s fierce form, this monumental dawn raga carries a deeply solemn, meditative, and holy character filled with absolute devotion.',
+                songs: '• Albela Sajan Aayo Ri (Hum Dil De Chuke Sanam)\n• Jaago Mohan Pyare (Jagte Raho)',
+                aaroh: ['Sa', 'ReK', 'Ga', 'Ma', 'Pa', 'DhaK', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'DhaK', 'Pa', 'Ma', 'Ga', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'Ga', 'Ma', 'Pa', 'Ma', 'Ga', 'ReK', 'Sa', 'Ga', 'Ma', 'Pa', 'DhaK', 'Pa']
+            },
+            'bhupali': {
+                name: 'Raga Bhupali', thaat: 'Kalyan', time: 'First Part of Night (6 PM - 9 PM)', notes: 'Sa Re Ga Pa Dha (Audav)',
+                history: 'An ancient 5-note pentatonic scale evoking majestic grace and tranquility. Widely taught to beginners due to its beautifully balanced symmetric structure.',
+                songs: '• Dil Hoom Hoom Kare (Rudaali)\n• Sayonara Sayonara (Love In Tokyo)',
+                aaroh: ['Sa', 'Re', 'Ga', 'Pa', 'Dha', 'Sa2'], 
+                avroh: ['Sa2', 'Dha', 'Pa', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ga', 'Pa', 'Ga', 'Re', 'Sa', 'Re', 'Ga', 'Pa', 'Dha', 'Pa', 'Dha', 'Sa2']
+            },
+            'yaman': {
+                name: 'Raga Yaman', thaat: 'Kalyan', time: 'Evening (6 PM - 9 PM)', notes: 'Teevra Ma, Rest Shuddha',
+                history: 'Brought into deep classical prominence by court musician Amir Khusrau. It radiates unmatched romantic elegance, warmth, and artistic grandeur.',
+                songs: '• Jab Deep Jale Aana (Chitchor)\n• Aaj Jaane Ki Zid Na Karo (Farida Khanum)',
+                aaroh: ['Sa', 'Re', 'Ga', 'MaT', 'Pa', 'Dha', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'Dha', 'Pa', 'MaT', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ga', 'MaT', 'Pa', 'MaT', 'Ga', 'Re', 'Ga', 'MaT', 'Pa', 'Dha', 'Ni', 'Sa2']
+            },
+            'kafi': {
+                name: 'Raga Kafi', thaat: 'Kafi', time: 'Midnight (12 AM - 3 AM)', notes: 'Komal Ga, Komal Ni',
+                history: 'A foundational folk-rooted scale that forms the beating heart of semi-classical Thumri, Hori, and emotional Sufi compositions throughout India.',
+                songs: '• Tumhi Dekho Na (Kabhi Alvida Naa Kehna)\n• Biraj Mein Holi Khelat Nandlal',
+                aaroh: ['Sa', 'Re', 'GaK', 'Ma', 'Pa', 'Dha', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'GaK', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'GaK', 'Ma', 'Pa', 'Ma', 'GaK', 'Re', 'GaK', 'Ma', 'Pa', 'Dha', 'NiK', 'Sa2']
+            },
+            'bhairavi': {
+                name: 'Raga Bhairavi', thaat: 'Bhairavi', time: 'Early Morning', notes: 'Re, Ga, Dha, Ni are Komal',
+                history: 'The undisputed "Queen of Ragas." While historically sung at dawn, its emotional versatility allows artists to play it at any hour to conclude classical concerts beautifully.',
+                songs: '• Mitwa (Kabhi Alvida Naa Kehna - Intro)\n• Ram Teri Ganga Maili Ho Gayi',
+                aaroh: ['Sa', 'ReK', 'GaK', 'Ma', 'Pa', 'DhaK', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'DhaK', 'Pa', 'Ma', 'GaK', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'GaK', 'Ma', 'Pa', 'DhaK', 'NiK', 'Sa2', 'NiK', 'DhaK', 'Pa', 'Ma', 'GaK', 'ReK', 'Sa']
+            },
+            'asavari': {
+                name: 'Raga Asavari', thaat: 'Asavari', time: 'Morning (9 AM - 12 PM)', notes: 'Komal Ga, Dha, Ni',
+                history: 'A grand melodic profile capturing a lingering, dignified sense of melancholy, detachment, and heavy emotional yearning.',
+                songs: '• Mujhe Gale Se Laga Lo (Aaj Aur Kal)\n• Chale Pawan Ki Chaal (Namak Haraam)',
+                aaroh: ['Sa', 'Re', 'Ma', 'Pa', 'DhaK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'DhaK', 'Pa', 'Ma', 'GaK', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ma', 'Pa', 'DhaK', 'Pa', 'Ma', 'GaK', 'Re', 'Sa']
+            },
+            'khamaj': {
+                name: 'Raga Khamaj', thaat: 'Khamaj', time: 'Late Night (9 PM - 12 AM)', notes: 'Shuddha Ni in Aaroh, Komal Ni in Avroh',
+                history: 'Extremely fluid and expressive, Khamaj thrives on romantic and dramatic themes. It is highly prominent in semi-classical items and classical dance numbers.',
+                songs: '• Mitwa (Kabhi Alvida Naa Kehna)\n• Bada Natkhat Hai Re Krishna Kanhaiya',
+                aaroh: ['Sa', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni', 'Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'Re', 'Sa']
+            },
+            'durga': {
+                name: 'Raga Durga', thaat: 'Bilaval', time: 'Late Night (9 PM - 12 AM)', notes: 'Sa Re Ma Pa Dha (Pentatonic)',
+                history: 'Dedicated directly to the embodiment of Shakti, Goddess Durga. It radiates absolute purity, innocence, and joyful confidence through its clean pentatonic shifts.',
+                songs: '• Geet Gaata Hoon Main (Shararat)\n• Chanda Re Chanda Re (Sapnay)',
+                aaroh: ['Sa', 'Re', 'Ma', 'Pa', 'Dha', 'Sa2'], 
+                avroh: ['Sa2', 'Dha', 'Pa', 'Ma', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ma', 'Pa', 'Dha', 'Pa', 'Ma', 'Re', 'Ma', 'Pa', 'Dha', 'Sa2', 'Dha', 'Sa2']
+            },
+            'malkauns': {
+                name: 'Raga Malkauns', thaat: 'Bhairavi', time: 'Midnight (12 AM - 3 AM)', notes: 'Komal Ga, Dha, Ni (Skips Re and Pa)',
+                history: 'One of India\'s oldest mythical scales. Lore states Goddess Parvati created it to calm the cosmic anger of Lord Shiva. Deeply hypnotic and meditative.',
+                songs: '• Man Tarpat Hari Darshan Ko (Baiju Bawra)\n• Garajat Barsat Bheegi Lavan',
+                aaroh: ['Sa', 'GaK', 'Ma', 'DhaK', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'DhaK', 'Ma', 'GaK', 'Sa'],
+                taan: ['Sa', 'GaK', 'Ma', 'DhaK', 'Ma', 'GaK', 'Sa', 'GaK', 'Ma', 'DhaK', 'NiK', 'DhaK', 'NiK', 'Sa2']
+            },
+            'desh': {
+                name: 'Raga Desh', thaat: 'Khamaj', time: 'Night (9 PM - 12 AM)', notes: 'Shuddha Ni in Aaroh, Komal Ni in Avroh',
+                history: 'A deeply emotional, patriotic, and folk-inspired landscape. It holds a powerful connection to the rich monsoons of India and absolute romance.',
+                songs: '• Vande Mataram (National Song)\n• Mora Saiyan Mose Bole Na',
+                aaroh: ['Sa', 'Re', 'Ma', 'Pa', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ma', 'Pa', 'Ni', 'Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'Re', 'Sa', 'Re', 'Sa']
+            },
+            'bageshri': {
+                name: 'Raga Bageshri', thaat: 'Kafi', time: 'Midnight (12 AM - 3 AM)', notes: 'Komal Ga, Komal Ni (Omits Re, Pa inside Aaroh)',
+                history: 'Depicts a woman waiting longingly to meet her lover. It builds an atmosphere of delicate romance, soft beauty, and sweet artistic anxiety.',
+                songs: '• Radha Kaise Na Jale (Lagaan)\n• Kaun Aaya Mere Man Ke Dwaare',
+                aaroh: ['Sa', 'GaK', 'Ma', 'Dha', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Dha', 'Ma', 'GaK', 'Re', 'Sa'],
+                taan: ['Sa', 'GaK', 'Ma', 'Dha', 'NiK', 'Dha', 'Ma', 'GaK', 'Re', 'Sa']
+            },
+            'todi': {
+                name: 'Raga Todi', thaat: 'Todi', time: 'Morning (8 AM - 11 AM)', notes: 'Komal Re, Ga, Dha and Teevra Ma',
+                history: 'A highly majestic morning scale representing total submission, deep religious worship, and unparalleled emotional gravity.',
+                songs: '• Raina Beeti Jaaye (Amar Prem - Intro)\n• Main To Tum Sang Nain Mila Ke',
+                aaroh: ['Sa', 'ReK', 'GaK', 'MaT', 'DhaK', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'DhaK', 'MaT', 'GaK', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'GaK', 'MaT', 'DhaK', 'MaT', 'GaK', 'ReK', 'GaK', 'MaT', 'DhaK', 'Ni', 'Sa2']
+            },
+            'marwa': {
+                name: 'Raga Marwa', thaat: 'Marwa', time: 'Sunset Dusk (4 PM - 6 PM)', notes: 'Komal Re and Teevra Ma (Pa omitted)',
+                history: 'A highly complex twilight scale reflecting absolute renunciation, tense anticipation, and psychological detachment from the material world.',
+                songs: '• Payelia Bawri Baji\n• Koi Sagar Dil Ko Behlata Nahin',
+                aaroh: ['Sa', 'ReK', 'Ga', 'MaT', 'Dha', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'Dha', 'MaT', 'Ga', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'Ga', 'MaT', 'Dha', 'MaT', 'Ga', 'ReK', 'Ga', 'MaT', 'Dha', 'Ni', 'Sa2']
+            },
+            'sarang': {
+                name: 'Raga Vrindavani Sarang', thaat: 'Kafi', time: 'Midday Noon (12 PM - 3 PM)', notes: 'Skips Ga, Dha. Shuddha Ni in Aaroh, Komal Ni in Avroh',
+                history: 'Born directly from old Vrindavan folk tracks, this bright raga captures the heavy shimmering light and thermal intensity of the Indian noon.',
+                songs: '• Jhoole Mein Pawan Ki Aayi Bahar\n• Tum To Pyaar Ho (Seema)',
+                aaroh: ['Sa', 'Re', 'Ma', 'Pa', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Pa', 'Ma', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ma', 'Pa', 'Ni', 'Sa2', 'NiK', 'Pa', 'Ma', 'Re', 'Ma', 'Re', 'Sa']
+            },
+            'jaunpuri': {
+                name: 'Raga Jaunpuri', thaat: 'Asavari', time: 'Late Morning (9 AM - 12 PM)', notes: 'Komal Ga, Dha, Ni (Aaroh skips Ga)',
+                history: 'Invented by the royal scholar Sultan Hussain Sharqi of the Jaunpur kingdom, it is rich with expressions of power, celebration, and morning light.',
+                songs: '• Jhoote Naina Bole (Lekin)\n• Meri Yaad Mein Tum Na Aansu Bahana',
+                aaroh: ['Sa', 'Re', 'Ma', 'Pa', 'DhaK', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'DhaK', 'Pa', 'Ma', 'GaK', 'Re', 'Sa'],
+                taan: ['Sa', 'Re', 'Ma', 'Pa', 'DhaK', 'Pa', 'Ma', 'GaK', 'Re', 'Ma', 'Pa', 'DhaK', 'NiK', 'Sa2']
+            },
+            'ahirbhairav': {
+                name: 'Raga Ahir Bhairav', thaat: 'Bhairav', time: 'Morning Dawn (4 AM - 6 AM)', notes: 'Komal Re and Komal Ni',
+                history: 'An exceptionally smooth, iconic blend of traditional Bhairav with ancient cowherd folk melodies of the Ahir community. Pure peace.',
+                songs: '• Albela Sajan (Bajirao Mastani variant)\n• Poochho Na Maine Kaise Re',
+                aaroh: ['Sa', 'ReK', 'Ga', 'Ma', 'Pa', 'Dha', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'Ga', 'Ma', 'Pa', 'Dha', 'NiK', 'Dha', 'Pa', 'Ma', 'Ga', 'ReK', 'Sa']
+            },
+            'bihag': {
+                name: 'Raga Bihag', thaat: 'Bilaval', time: 'Late Night (9 PM - 12 AM)', notes: 'Features Teevra Ma in Avroh, rest Shuddha',
+                history: 'A luxurious romantic evening scale expressing joy, artistic elegance, and triumphant fulfillment of lovers.',
+                songs: '• Tere Sur Aur Mere Geet (Goonj Uthi Shehnai)\n• Zindagi Ke Safar Mein (Aap Ki Kasam)',
+                aaroh: ['Sa', 'Ga', 'Ma', 'Pa', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'Dha', 'Pa', 'MaT', 'Ga', 'Re', 'Sa'],
+                taan: ['Sa', 'Ga', 'Ma', 'Pa', 'Ni', 'Sa2', 'Ni', 'Dha', 'Pa', 'MaT', 'Ga', 'Ma', 'Ga', 'Sa']
+            },
+            'bairagi': {
+                name: 'Raga Bairagi', thaat: 'Bhairav', time: 'Early Morning (4 AM - 6 AM)', notes: 'Sa ReK Ma Pa NiK (Omits Ga and Dha)',
+                history: 'A pristine, ascetic morning scale built for yogic meditation, total quietness, and freedom from worldly attachment.',
+                songs: '• Kahan Se Aaye Badra (Chashme Buddoor)\n• Main To Kab Se Teri Sharan Mein',
+                aaroh: ['Sa', 'ReK', 'Ma', 'Pa', 'NiK', 'Sa2'], 
+                avroh: ['Sa2', 'NiK', 'Pa', 'Ma', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'Ma', 'Pa', 'NiK', 'Pa', 'Ma', 'ReK', 'Ma', 'Pa', 'NiK', 'Sa2']
+            },
+            'purvi': {
+                name: 'Raga Purvi', thaat: 'Purvi', time: 'Sunset Evening (4 PM - 6 PM)', notes: 'Komal Re, Komal Dha, Teevra Ma',
+                history: 'Deeply traditional sunset raga carrying an intensely solemn and majestic state of serious spiritual analysis and transitions.',
+                songs: '• Pyaar Hua Ikraar Hua (Interlude motifs)\n• Hari Om NAMO Narrayana',
+                aaroh: ['Sa', 'ReK', 'Ga', 'MaT', 'Pa', 'DhaK', 'Ni', 'Sa2'], 
+                avroh: ['Sa2', 'Ni', 'DhaK', 'Pa', 'MaT', 'Ga', 'ReK', 'Sa'],
+                taan: ['Sa', 'ReK', 'Ga', 'MaT', 'Pa', 'DhaK', 'MaT', 'Ga', 'ReK', 'Ga', 'MaT', 'Pa', 'DhaK', 'Ni', 'Sa2']
+            }
+        };
+
+        // 📚 LIBRARY MATRIX RENDER
+        function generateRagaLibraryUI() {
+            const gridContainer = document.getElementById('raga-grid');
+            if (!gridContainer) return;
+
+            gridContainer.innerHTML = '';
+
+            Object.keys(ragaDatabase).forEach(key => {
+                const raga = ragaDatabase[key];
+                const card = document.createElement('div');
+                card.className = 'raga-card';
+                card.setAttribute('onclick', `openRagaModal('${key}')`);
+                
+                card.innerHTML = `
+                    <h3>${raga.name}</h3>
+                    <p><strong>Thaat:</strong> ${raga.thaat}</p>
+                    <p><strong>Optimal Time:</strong> ${raga.time}</p>
+                    <span class="tap-hint">👉 View Notes, Taans & History</span>
+                `;
+                gridContainer.appendChild(card);
+            });
+        }
+
+        // 🖼️ EXPLORER DETAIL MODAL CONTROLLER
+        function openRagaModal(key) {
+            const raga = ragaDatabase[key];
+            if (!raga) return;
+
+            activeRagaKeyForTracking = key;
+
+            // Mapping Text Fields
+            document.getElementById('modal-raga-name').innerText = raga.name;
+            document.getElementById('modal-raga-meta').innerText = `Thaat: ${raga.thaat}   |   Optimal Time: ${raga.time}`;
+            
+            // Format arrays natively using beautiful dash spaces
+            document.getElementById('modal-raga-aaroh').innerText = raga.aaroh.join(' - ');
+            document.getElementById('modal-raga-avroh').innerText = raga.avroh.join(' - ');
+            document.getElementById('modal-raga-taan').innerText = raga.taan.join(' - ');
+
+            document.getElementById('modal-raga-history').innerText = raga.history;
+            document.getElementById('modal-raga-songs').innerHTML = raga.songs.replace(/\n/g, '<br>');
+
+            // Sync values from local persistence storage
+            const savedState = localStorage.getItem(`riyaz_raga_${key}`) || '0,0,0,0';
+            const states = savedState.split(',');
+            
+            document.getElementById('chk-aaroh').checked = states[0] === '1';
+            document.getElementById('chk-avroh').checked = states[1] === '1';
+            document.getElementById('chk-alankars').checked = states[2] === '1';
+            document.getElementById('chk-taans').checked = states[3] === '1';
+
+            document.getElementById('raga-modal').classList.add('active');
+        }
+
+        function closeRagaModal() {
+            document.getElementById('raga-modal').classList.remove('active');
+        }
+
+        function saveModalProgress() {
+            if (!activeRagaKeyForTracking) return;
+
+            const a = document.getElementById('chk-aaroh').checked ? '1' : '0';
+            const v = document.getElementById('chk-avroh').checked ? '1' : '0';
+            const al = document.getElementById('chk-alankars').checked ? '1' : '0';
+            const t = document.getElementById('chk-taans').checked ? '1' : '0';
+
+            localStorage.setItem(`riyaz_raga_${activeRagaKeyForTracking}`, `${a},${v},${al},${t}`);
+            alert(`Progress compiled for ${ragaDatabase[activeRagaKeyForTracking].name}!`);
+            closeRagaModal();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateRagaLibraryUI();
+        });
+
+        // 🎹 CODESPACE SYNTHESIZER VOICE CHIP
+        function playNote(noteKey) {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+
+            const frequency = swarFrequencies[noteKey];
+            if (!frequency) return;
+
+            const vocalCords = audioCtx.createOscillator();
+            const vocalGain = audioCtx.createGain();
+            const throatFilter = audioCtx.createBiquadFilter();
+            const mouthFilter = audioCtx.createBiquadFilter();
+            const vibratoOsc = audioCtx.createOscillator();
+            const vibratoGain = audioCtx.createGain();
+
+            vocalCords.type = 'sawtooth';
+            vocalCords.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            vibratoOsc.frequency.setValueAtTime(5.5, audioCtx.currentTime);
+            vibratoGain.gain.setValueAtTime(1.8, audioCtx.currentTime); 
+            
+            throatFilter.type = 'bandpass';
+            throatFilter.frequency.setValueAtTime(730, audioCtx.currentTime);
+            throatFilter.Q.setValueAtTime(10, audioCtx.currentTime);
+
+            mouthFilter.type = 'bandpass';
+            mouthFilter.frequency.setValueAtTime(1090, audioCtx.currentTime);
+            mouthFilter.Q.setValueAtTime(10, audioCtx.currentTime);
+
+            vocalGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            vocalGain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.15); 
+            vocalGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2); 
+
+            vibratoOsc.connect(vibratoGain);
+            vibratoGain.connect(vocalCords.frequency); 
+
+            vocalCords.connect(throatFilter);
+            vocalCords.connect(mouthFilter);
+
+            throatFilter.connect(vocalGain);
+            mouthFilter.connect(vocalGain);
+
+            vocalGain.connect(audioCtx.destination);
+
+            vibratoOsc.start();
+            vocalCords.start();
+            vibratoOsc.stop(audioCtx.currentTime + 1.2);
+            vocalCords.stop(audioCtx.currentTime + 1.2);
+
+            const btn = document.getElementById('note-' + noteKey);
+            if(btn) {
+                btn.classList.add('playing');
+                setTimeout(() => btn.classList.remove('playing'), 250);
+            }
+        }
+
+        // ⚡ INTELLIGENT SEQUENCER TIMING CONTROLLER
+        function playSequence(type) {
+            const selectedRagaKey = document.getElementById('raga-select').value;
+            const ragaData = ragaDatabase[selectedRagaKey];
+            
+            if (!ragaData) return;
+            
+            const noteList = ragaData[type]; 
+            if (!noteList) return;
+            
+            // Fast execution timing modifier (Taans play rapidly at 380ms vs regular 750ms scales)
+            const noteTempo = (type === 'taan') ? 380 : 750;
+            
+            noteList.forEach((note, idx) => {
+                setTimeout(() => { 
+                    playNote(note); 
+                }, idx * noteTempo);
+            });
+        }
+    </script>
+</body>
+</html>
